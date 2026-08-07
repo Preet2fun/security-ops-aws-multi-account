@@ -23,40 +23,23 @@ This steering document drives **Objective 1: Exam Preparation** — creating com
 
 ## Study Notes Structure
 
-All study notes live in `/exam-study/` and follow this structure:
+All study notes live in `/exam-study/` as flat, all-in-one per-service files:
 
 ```
 exam-study/
-├── README.md                          # Study plan and progress tracker
-├── aws-services/                      # Deep-dive per service (self-contained)
-│   ├── organizations-deep-dive.md
-│   ├── cloudfront-deep-dive.md
-│   └── ... (one per service)
-├── exam-domain-mapping/               # Cross-service revision sheets per exam domain
-│   ├── domain-1-threat-detection.md
-│   ├── domain-2-logging-monitoring.md
-│   ├── domain-3-infrastructure-security.md
-│   ├── domain-4-iam.md
-│   ├── domain-5-data-protection.md
-│   ├── domain-6-governance.md
-│   └── domain-7-ai-ml-security.md
-├── real-world-use-cases/              # Detailed production scenarios per service
-│   ├── cloudfront-use-cases.md
-│   └── ... (one per service)
-└── threat-mitigation/                 # Real-world attacks mitigated by each service
-    ├── cloudfront-threat-mitigation.md
-    └── ... (one per service)
+├── README.md              # Study plan and progress tracker
+├── {service-name}.md      # All-in-one per service (deep-dive + threats + use-cases + exam tips)
+└── domain-revision/       # Cross-service revision sheets per exam domain
+    └── domain-{n}-{name}.md
 ```
 
-### Folder Purpose
-- **aws-services/**: Self-contained deep-dive per service — covers internals, config, threats, defense-in-depth positioning, and exam tips all in one file. Used for first-time learning.
-- **exam-domain-mapping/**: Cross-service consolidated revision per exam domain — shows how multiple services work together within a domain. Used for final exam prep.
-- **real-world-use-cases/**: Detailed production architecture scenarios with full configurations for a specific service. Used for understanding practical application and real-world patterns.
-- **threat-mitigation/**: Maps real-world cloud attacks (infra-level and app-level) to how a specific AWS service prevents/mitigates them. Used for understanding the "why" behind security controls.
+### File Purpose
+- **`{service-name}.md`**: Self-contained deep-dive per service — covers internals, config, threats, use-cases, defense-in-depth positioning, and exam tips all in ONE file. Used for both learning and revision.
+- **`domain-revision/`**: Cross-service consolidated revision per exam domain — shows how multiple services work together within a domain. Used for final exam prep only.
 
 ## Study Note Template (Mandatory Sections)
 
-When creating a deep-dive note for any AWS service, **ALL** of the following sections MUST be included:
+When creating a study note for any AWS service, **ALL** of the following sections MUST be included in a single `exam-study/{service-name}.md` file:
 
 ### 1. Service Introduction & Significance
 - What the service does and why it exists
@@ -71,6 +54,8 @@ When creating a deep-dive note for any AWS service, **ALL** of the following sec
 
 ### 3. Step-by-Step Configuration Guide
 - Every configuration option with its significance
+- AWS Console steps (numbered, with navigation paths)
+- AWS CLI commands
 - Why each setting matters from a security perspective
 - Default vs recommended values
 - Configuration order and dependencies
@@ -79,74 +64,54 @@ When creating a deep-dive note for any AWS service, **ALL** of the following sec
 - What cloud-native threats this service mitigates
 - Application-level vs infrastructure-level protection
 - Attack vectors it detects or prevents
-- Threat scenarios (with examples)
+- Per-attack: classification, real-world examples, mitigation mechanism, configuration
 
-### 5. Defense-in-Depth Positioning
+### 5. Real-World Use Cases
+- Multi-tenant SaaS scenario
+- Compliance/regulatory scenario (HIPAA, PCI, GDPR)
+- DDoS/attack mitigation scenario
+- Cross-account/multi-account scenario
+- Each with: business context, architecture diagram, configuration, security rationale
+
+### 6. Defense-in-Depth Positioning
 - Where this service sits in the defense-in-depth model (preventive/detective/responsive)
 - How it integrates with other security services
 - AWS Well-Architected Security Pillar alignment
 - Cost vs risk trade-off recommendations
 
-### 6. Exam-Critical Points
-- Explicitly marked sections important for the exam
-- Common exam question patterns for this service
+### 7. Exam-Critical Points
+- Must-know facts (numbered list)
+- Common exam question patterns
 - Tricky concepts and gotchas
 - Comparison points with similar services
+- Domain mapping
 
-### 7. Additional Sections (as needed)
-- Pricing model and cost optimization
-- Limits and quotas
-- Common troubleshooting scenarios
-- Integration patterns
+### 8. Pricing & Limits
+### 9. Troubleshooting
+### 10. Documentation References
+
+## Content Freshness
+
+- Every file includes `> Last Updated: {date}` at the top
+- The `@release-tracker` agent flags files with `<!-- STALE: ... -->` comments when AWS releases affect them
+- The `@content-updater` agent refreshes files against latest AWS documentation
+- Every file includes a `## Change Log` section at the bottom tracking updates
+
+## Agent Integration
+
+| Agent | Trigger | What It Does |
+|-------|---------|--------------|
+| `@service-deep-dive` | `@service-deep-dive {service}` | Creates new all-in-one study file |
+| `@content-updater` | `@content-updater {service}` | Refreshes existing file with latest docs |
+| `@release-tracker` | `@release-tracker` | Produces weekly digest + flags stale files |
 
 ## MCP Server Usage (Mandatory)
 
-When creating any study note:
+When creating or updating any study note:
 1. **ALWAYS use AWS Knowledge MCP** (`mcp_aws_knowledge_aws___search_documentation`) to search for current service documentation
 2. **ALWAYS use AWS Documentation MCP** (`mcp_aws_docs_search_documentation` / `mcp_aws_docs_read_documentation`) to fetch detailed guides
 3. **Cross-reference** multiple official sources for accuracy
-4. **Cite** relevant documentation URLs in notes
-
-## Real-World Use Cases Template (Mandatory for real-world-use-cases/ folder)
-
-When creating a real-world use cases file for a service, include:
-
-### Per Use Case:
-1. **Business Context** — Why does this scenario exist? What business problem?
-2. **Architecture Diagram** — ASCII diagram showing the full flow with security components
-3. **Configuration Details** — Actual settings, policies, and code snippets
-4. **Security Rationale** — Why each decision was made from a security perspective
-
-### Use Case Types to Cover:
-- Multi-tenant SaaS scenario
-- Compliance/regulatory scenario (HIPAA, PCI, GDPR)
-- DDoS/attack mitigation scenario
-- Cross-account/multi-account scenario
-- Zero-trust / mTLS scenario
-- Disaster recovery / failover scenario
-- Troubleshooting / incident scenario
-
-## Threat Mitigation Template (Mandatory for threat-mitigation/ folder)
-
-When creating a threat-mitigation file for a service, include:
-
-### Per Attack:
-1. **Classification** — Infrastructure-Level or Application-Level attack
-2. **What It Is** — Brief technical description of the attack
-3. **Real-World Examples** — Actual breaches or incidents (with dates where possible)
-4. **How the Service Mitigates** — Table mapping features to mitigation mechanism
-5. **Configuration** — Actual config/code to enable the mitigation
-6. **Key Exam Point** — What to remember for the exam
-
-### Attack Types to Cover:
-- DDoS (volumetric and application layer)
-- Injection attacks (SQLi, XSS, command injection)
-- Man-in-the-middle / protocol attacks
-- Unauthorized access / data theft
-- Bot abuse / credential stuffing
-- Origin exposure / bypass attacks
-- Encryption/protocol downgrade attacks
-- Any service-specific threats
+4. **Cite** relevant documentation URLs in the References section
 
 ## Core Services to Cover (Priority Order)
 
@@ -204,4 +169,4 @@ When creating a threat-mitigation file for a service, include:
 
 ---
 
-**This document drives all exam study content creation. Every note must follow the template and use MCP servers for accuracy.**
+**This document drives all exam study content creation. Every note must follow the template, use MCP servers for accuracy, and be a single all-in-one file per service.**

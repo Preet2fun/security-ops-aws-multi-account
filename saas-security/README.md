@@ -1,11 +1,10 @@
 # SaaS Security Platform — Defense-in-Depth Implementation
 
 ## Overview
-This folder contains the complete security implementation for a **multi-tenant ITOM/ITSM SaaS platform on AWS**. Every security control is implemented using spec-driven development (Kiro specs) with both manual AWS Console guides and Infrastructure as Code (CloudFormation + Terraform).
+Production-grade security architecture for a **multi-tenant ITOM/ITSM SaaS platform on AWS**. Each service gets a flat folder containing manual guide, CloudFormation, Terraform, and scripts — all in one place.
 
 ## Platform Architecture
 
-### Account Structure
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    AWS Organizations                      │
@@ -14,32 +13,43 @@ This folder contains the complete security implementation for a **multi-tenant I
 │ (Governance)    │ (Security)   │  (Centralized Logs)    │
 ├─────────────────┴──────────────┴────────────────────────┤
 │                   Workload Account                        │
-│  ┌─────────────────────────────────────────────────┐    │
-│  │ Internet → Route53 → CloudFront → API GW → NLB │    │
-│  │                                       ↓         │    │
-│  │                              EKS Clusters       │    │
-│  │                                       ↓         │    │
-│  │                                 RDS (Multi-AZ)  │    │
-│  └─────────────────────────────────────────────────┘    │
-│                Security Services Layer                    │
+│  Internet → Route53 → CloudFront → API GW → NLB → EKS  │
+│                                                     ↓    │
+│                                               RDS (Multi-AZ) │
+│             Security Services Layer                       │
 │     (WAF, Shield, GuardDuty, Config, CloudTrail, etc.)  │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Multi-Tenant Isolation
-- **Compute:** Kubernetes namespaces + RBAC per tenant
-- **Data:** Tenant-specific database schemas
-- **API:** Per-tenant throttling via API Gateway usage plans
-- **Monitoring:** Tenant-aware logging and alerting
+## Folder Structure
 
-## Implementation Approach
+```
+saas-security/
+├── README.md              ← You are here
+├── specs-todo.md          # Master checklist (35 specs)
+├── architecture.md        # Platform HLD + defense-in-depth model
+└── {service-name}/        # Per-service implementation folder
+    ├── guide.md           # Manual console guide + HLD/LLD
+    ├── main.tf            # Terraform module
+    ├── variables.tf       # Terraform variables
+    ├── outputs.tf         # Terraform outputs
+    ├── template.yaml      # CloudFormation template
+    └── scripts/
+        ├── deploy.sh      # Deployment script
+        └── validate.sh    # Validation script
+```
 
-Each security spec produces:
-1. **Kiro Spec** (`.kiro/specs/{spec-name}/`) — Requirements → Design → Tasks
-2. **Manual Guide** (`implementation/manual-configuration/`) — AWS Console step-by-step
-3. **CloudFormation** (`implementation/automation/cloudformation/`) — Templates with parameters
-4. **Terraform** (`implementation/automation/terraform/`) — Modules per layer
-5. **Scripts** (`implementation/automation/scripts/`) — Deploy, validate, cleanup
+## Implemented Services
+
+| Service | Folder | Status | Spec |
+|---------|--------|--------|------|
+| AWS Organizations | `organizations/` | Completed | Spec 01 |
+
+## How It Works
+
+1. **Kiro Spec** → `.kiro/specs/{service-name}/` defines requirements, design, tasks
+2. **`@security-architect` agent** → produces all artifacts in `saas-security/{service-name}/`
+3. **Your security engineer** → follows `guide.md` for manual setup or deploys IaC
 
 ## Defense-in-Depth Layers
 
@@ -50,31 +60,11 @@ Each security spec produces:
 | 3 | Responsive | EventBridge, Lambda, Step Functions, Playbooks, Detective |
 | 4 | Recovery | Backups, Cross-region replication, DR procedures |
 
-## Folder Structure
+## Agents
 
-```
-saas-security/
-├── README.md                          ← You are here
-├── specs-todo.md                      # Master checklist (35 specs)
-├── architecture/                      # Architecture docs and diagrams
-├── implementation/
-│   ├── manual-configuration/          # AWS Console guides (numbered)
-│   └── automation/
-│       ├── cloudformation/            # CFn templates by layer
-│       ├── terraform/                 # TF modules by layer
-│       └── scripts/                   # Deploy/validate/cleanup
-├── security-operations/
-│   ├── playbooks/                     # Incident response, threat hunting
-│   ├── automation/                    # Lambda, Step Functions, EventBridge
-│   └── monitoring/                    # Dashboards, alerts, metrics
-├── policies/                          # IAM, SCP, RCP, resource policies
-└── compliance/                        # SOC2, ISO27001, GDPR controls
-```
-
-## Progress
-
-See [specs-todo.md](./specs-todo.md) for the full implementation checklist with phases, priorities, and dependencies.
+- `@security-architect {service}` — Creates Kiro spec + full implementation folder
+- `@content-updater {service}` — Updates existing implementation with latest AWS changes
 
 ---
 
-*All implementations follow AWS Well-Architected Security Pillar best practices and are sourced from official documentation via MCP servers.*
+*All implementations follow AWS Well-Architected Security Pillar best practices.*

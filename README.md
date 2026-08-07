@@ -2,82 +2,77 @@
 
 ## Two Objectives, One Repository
 
-This repository serves two distinct purposes:
-
 | # | Objective | Folder | Focus |
 |---|-----------|--------|-------|
-| 1 | **Exam Study** | [`/exam-study/`](./exam-study/) | Deep-dive theoretical notes for AWS Security Specialty (SCS-C03) |
-| 2 | **SaaS Security** | [`/saas-security/`](./saas-security/) | Practical defense-in-depth implementation for multi-tenant ITOM/ITSM platform |
-
----
-
-## Objective 1: AWS Security Specialty (SCS-C03) Exam Study
-
-Comprehensive study notes for all 7 exam domains, created from official AWS documentation (via MCP servers). Each service note covers:
-
-- Service introduction and significance
-- Behind-the-scenes technical flow (single-account & multi-account)
-- Step-by-step configuration with significance of each setting
-- Threat mitigation coverage (app-level vs infra-level)
-- Defense-in-depth positioning and Well-Architected alignment
-- Exam-critical points and common question patterns
-
-**→ See [`exam-study/README.md`](./exam-study/README.md) for study plan and progress tracker**
-
----
-
-## Objective 2: SaaS Security Platform Implementation
-
-Production-grade security architecture for a multi-tenant SaaS platform (ITOM & ITSM) on AWS. Uses spec-driven development (Kiro) to produce:
-
-- Manual AWS Console configuration guides
-- CloudFormation templates
-- Terraform modules
-- Deployment and validation scripts
-
-Covers 35 security specs across 11 phases (foundation → identity → network → data → detection → logging → containers → API → incident response → compliance → DR).
-
-**→ See [`saas-security/README.md`](./saas-security/README.md) for architecture and progress**
-**→ See [`saas-security/specs-todo.md`](./saas-security/specs-todo.md) for implementation checklist**
+| 1 | **Exam Study** | `exam-study/` | Deep-dive study notes for AWS Security Specialty (SCS-C03) |
+| 2 | **SaaS Security** | `saas-security/` | Defense-in-depth implementation for multi-tenant ITOM/ITSM platform |
 
 ---
 
 ## Repository Structure
 
 ```
-.
-├── README.md                          ← You are here
-├── exam-study/                        # OBJECTIVE 1: Exam preparation
-│   ├── README.md                      # Study plan and progress tracker
-│   ├── aws-services/                  # Deep-dive per AWS security service
-│   ├── exam-domain-mapping/           # Content mapped to 7 exam domains
-│   ├── scenario-based-examples/       # Real-world exam scenarios
-│   ├── service-comparison-matrices/   # Side-by-side comparisons
-│   └── exam-tips/                     # Strategies and patterns
-├── saas-security/                     # OBJECTIVE 2: Platform security
-│   ├── README.md                      # Architecture overview
-│   ├── specs-todo.md                  # Master checklist (35 specs)
-│   ├── architecture/                  # Security architecture docs
-│   ├── implementation/
-│   │   ├── manual-configuration/      # AWS Console step-by-step guides
-│   │   └── automation/
-│   │       ├── cloudformation/        # CFn templates by layer
-│   │       ├── terraform/             # TF modules by layer
-│   │       └── scripts/               # Deploy/validate/cleanup
-│   ├── security-operations/           # Playbooks, automation, monitoring
-│   ├── policies/                      # IAM, SCP, RCP, resource policies
-│   └── compliance/                    # SOC2, ISO27001, GDPR frameworks
-└── .kiro/
-    ├── specs/                         # Kiro spec-driven development
-    └── steering/                      # 2 steering docs (exam + saas)
+security-operation/
+├── README.md                  ← You are here
+├── .kiro/
+│   ├── agents/                # 4 custom agents (see below)
+│   ├── steering/              # 2 steering docs (exam + saas)
+│   └── specs/                 # Kiro specs per service
+├── exam-study/                # Objective 1: one file per service
+│   ├── README.md
+│   ├── cloudfront.md
+│   ├── vpc.md
+│   ├── organizations.md
+│   └── domain-revision/       # Cross-service exam domain sheets
+├── saas-security/             # Objective 2: one folder per service
+│   ├── README.md
+│   ├── specs-todo.md
+│   ├── architecture.md
+│   └── organizations/         # guide.md + Terraform + CFn + scripts
+└── aws-updates/               # Weekly AWS security release digests
+    └── README.md
 ```
 
-## Steering Documents
+---
 
-| File | Drives |
-|------|--------|
-| `.kiro/steering/exam-study-guide.md` | Exam study note creation — template, MCP usage, domain mapping |
-| `.kiro/steering/saas-security-implementation.md` | SaaS security implementation — spec methodology, defense-in-depth model |
+## Custom Agents
+
+| Agent | Trigger | What It Produces |
+|-------|---------|-----------------|
+| `@service-deep-dive` | `@service-deep-dive {service}` | All-in-one exam study file in `exam-study/` |
+| `@security-architect` | `@security-architect {service}` | Kiro spec + HLD/LLD + manual guide + IaC in `saas-security/` |
+| `@release-tracker` | `@release-tracker` | Weekly digest in `aws-updates/` + stale content flags |
+| `@content-updater` | `@content-updater {service}` | Refreshes existing files with latest AWS documentation |
+
+---
+
+## Workflow
+
+### Learning a new service (exam prep)
+```
+@service-deep-dive GuardDuty
+→ Creates exam-study/guardduty.md (internals, config, threats, use-cases, exam tips)
+```
+
+### Implementing a service (platform security)
+```
+@security-architect WAF
+→ Creates .kiro/specs/waf/ (requirements, design, tasks)
+→ Creates saas-security/waf/ (guide.md, main.tf, template.yaml, scripts/)
+```
+
+### Keeping content fresh
+```
+@release-tracker
+→ Creates aws-updates/2025-week-32.md (categorized releases)
+→ Flags stale files with <!-- STALE: ... --> comments
+
+@content-updater cloudfront
+→ Updates exam-study/cloudfront.md with latest AWS docs
+→ Removes STALE flags, adds Change Log entry
+```
+
+---
 
 ## Platform Architecture (SaaS Security Context)
 
@@ -92,11 +87,28 @@ Covers 35 security specs across 11 phases (foundation → identity → network �
              (WAF, Shield, GuardDuty, Config, etc.)
 ```
 
+---
+
 ## Getting Started
 
-1. **For exam study:** Start with [`exam-study/README.md`](./exam-study/README.md) — pick a service, request a deep-dive note
-2. **For SaaS security:** Start with [`saas-security/specs-todo.md`](./saas-security/specs-todo.md) — pick a spec, create via Kiro
+1. **For exam study**: Run `@service-deep-dive {service}` to create study material
+2. **For platform security**: Run `@security-architect {service}` to design and implement
+3. **For freshness**: Run `@release-tracker` weekly to stay current
+
+See individual folder READMEs for more detail:
+- [`exam-study/README.md`](./exam-study/README.md)
+- [`saas-security/README.md`](./saas-security/README.md)
+- [`aws-updates/README.md`](./aws-updates/README.md)
 
 ---
 
-*All content sourced from official AWS documentation via AWS Knowledge and Documentation MCP servers.*
+## Steering Documents
+
+| File | Drives |
+|------|--------|
+| `.kiro/steering/exam-study-guide.md` | Exam study note template, MCP usage, domain mapping |
+| `.kiro/steering/saas-security-implementation.md` | SaaS implementation methodology, defense-in-depth model |
+
+---
+
+*All content sourced from official AWS documentation via MCP servers.*

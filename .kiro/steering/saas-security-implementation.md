@@ -31,10 +31,8 @@ Internet → Route 53 → CloudFront → API Gateway → NLB → EKS Clusters �
 
 ### Spec-Driven Development (Kiro)
 Every security implementation follows this process:
-1. **Spec Creation** — Requirements → Design → Tasks via Kiro specs
-2. **Manual Configuration** — Step-by-step AWS Console guide with validation
-3. **Infrastructure as Code** — CloudFormation templates + Terraform modules
-4. **Deployment Scripts** — Automated deployment and validation scripts
+1. **Spec Creation** — Requirements → Design → Tasks via Kiro specs (`.kiro/specs/{service-name}/`)
+2. **Implementation** — All artifacts in `saas-security/{service-name}/`
 
 ### Key Rules
 - Kiro provides documentation and code only — user deploys independently
@@ -43,74 +41,53 @@ Every security implementation follows this process:
 - MCP servers used for documentation accuracy
 
 ### Specs Location
-All implementation specs live in `.kiro/specs/` and implementation artifacts in `/saas-security/`
+- Kiro specs: `.kiro/specs/{service-name}/` (requirements.md, design.md, tasks.md)
+- Implementation: `saas-security/{service-name}/` (guide.md, main.tf, template.yaml, scripts/)
 
-## Repository Structure for SaaS Security
+## Repository Structure
 
 ```
 saas-security/
-├── README.md                              # Implementation overview and progress
-├── specs-todo.md                          # Master checklist of all security specs
-├── architecture/
-│   ├── security-architecture.md           # Overall security architecture
-│   ├── multi-account-strategy.md          # Account structure design
-│   ├── network-design.md                  # Network topology
-│   ├── defense-in-depth-model.md          # Layered security model
-│   └── threat-model.md                    # Platform threat model
-├── implementation/
-│   ├── manual-configuration/              # AWS Console step-by-step guides
-│   │   ├── 01-organizations-setup.md
-│   │   ├── 02-iam-strategy.md
-│   │   └── ... (numbered by spec order)
-│   └── automation/
-│       ├── cloudformation/
-│       │   ├── templates/
-│       │   │   ├── foundation/            # Organizations, Control Tower, IAM
-│       │   │   ├── security/              # GuardDuty, Security Hub, CloudTrail
-│       │   │   ├── network/               # VPC, WAF, Network Firewall
-│       │   │   └── data-protection/       # KMS, Secrets Manager, S3
-│       │   ├── parameters/
-│       │   └── nested-stacks/
-│       ├── terraform/
-│       │   ├── modules/
-│       │   │   ├── foundation/
-│       │   │   ├── security/
-│       │   │   ├── network/
-│       │   │   └── data-protection/
-│       │   └── environments/
-│       │       ├── dev/
-│       │       ├── staging/
-│       │       └── prod/
-│       └── scripts/
-│           ├── deployment/
-│           ├── validation/
-│           └── cleanup/
-├── security-operations/
-│   ├── playbooks/
-│   │   ├── incident-response/
-│   │   ├── threat-hunting/
-│   │   └── vulnerability-management/
-│   ├── automation/
-│   │   ├── lambda-functions/
-│   │   ├── step-functions/
-│   │   ├── eventbridge-rules/
-│   │   └── remediation-scripts/
-│   └── monitoring/
-│       ├── cloudwatch-dashboards/
-│       ├── alerting-rules/
-│       └── custom-metrics/
-├── policies/
-│   ├── iam-policies/
-│   ├── scp-policies/
-│   ├── rcp-policies/
-│   └── resource-policies/
-└── compliance/
-    ├── frameworks/
-    │   ├── soc2-controls.md
-    │   ├── iso27001-controls.md
-    │   └── gdpr-compliance.md
-    └── assessments/
+├── README.md              # Implementation overview and progress
+├── specs-todo.md          # Master checklist (35 specs)
+├── architecture.md        # Platform HLD + defense-in-depth model
+└── {service-name}/        # Per-service implementation (flat)
+    ├── guide.md           # HLD + LLD + manual console guide + validation
+    ├── main.tf            # Terraform module
+    ├── variables.tf       # Terraform variables
+    ├── outputs.tf         # Terraform outputs
+    ├── template.yaml      # CloudFormation template
+    └── scripts/
+        ├── deploy.sh      # Deployment automation
+        └── validate.sh    # Validation and testing
 ```
+
+## Guide.md Structure (Per Service)
+
+Every `guide.md` file must contain:
+
+### Part 1: High-Level Design (HLD)
+- Why this service is needed for the platform
+- Architecture diagram showing integration points
+- Defense-in-depth layer classification
+- Multi-account deployment model
+
+### Part 2: Low-Level Design (LLD)
+- Detailed configuration specifications
+- IAM policies and resource policies (full JSON)
+- Network requirements
+- Data flow with encryption points
+- Multi-tenant considerations
+
+### Part 3: Manual Configuration Guide
+- Numbered step-by-step AWS Console instructions
+- Navigation paths, settings, and validation checkpoints
+- Why each setting matters from a security perspective
+
+### Part 4: Validation Procedures
+- Verification steps
+- Test cases
+- Compliance validation (SOC 2, ISO 27001)
 
 ## Defense-in-Depth Model
 
@@ -158,6 +135,22 @@ saas-security/
 | Phase 10 | Advanced & AI/ML | 31-33 |
 | Phase 11 | Business Continuity | 34-35 |
 
+## Agent Integration
+
+| Agent | Trigger | What It Does |
+|-------|---------|--------------|
+| `@security-architect` | `@security-architect {service}` | Creates Kiro spec + all implementation artifacts |
+| `@content-updater` | `@content-updater {service}` | Refreshes existing implementation with latest docs |
+| `@release-tracker` | `@release-tracker` | Flags stale implementation guides |
+
+### Workflow
+1. Pick a service from `specs-todo.md`
+2. Run `@security-architect {service}` — it creates the spec AND implementation
+3. Review the Kiro spec (requirements → design → tasks)
+4. Hand `guide.md` to your security engineer for manual configuration
+5. Deploy IaC (Terraform or CloudFormation) for automation
+6. Periodically run `@release-tracker` to check for AWS updates
+
 ## MCP Server Usage
 
 - **AWS Knowledge MCP** — search documentation for best practices
@@ -172,7 +165,8 @@ saas-security/
 - Cost-conscious (balance security controls with operational costs)
 - Compliance-aligned (SOC 2, ISO 27001, GDPR)
 - Both manual and automated paths fully documented
+- Production-ready (not POC configurations)
 
 ---
 
-**This document drives all SaaS security implementation work. Every spec must produce manual guides, IaC automation, and integrate with the defense-in-depth model.**
+**This document drives all SaaS security implementation work. Every spec must produce a flat per-service folder with guide, IaC, and scripts.**
