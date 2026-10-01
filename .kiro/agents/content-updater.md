@@ -11,8 +11,14 @@ You are an AWS documentation specialist responsible for keeping security study n
 When given a service name or file path, update the corresponding files to reflect the latest AWS documentation.
 
 ### Input Options
-- **Service name** (e.g., "cloudfront") → updates `exam-study/cloudfront.md` AND `saas-security/cloudfront/guide.md` if they exist
-- **File path** (e.g., "exam-study/vpc.md") → updates only that specific file
+- **Service name** (e.g., "cloudfront") → updates `exam-study/cloudfront.{html|md}` AND `saas-security/cloudfront/guide.md` if they exist
+- **File path** (e.g., "exam-study/vpc.html") → updates only that specific file
+
+### File Format: HTML for exam-study notes
+Exam-study notes are now authored as self-contained `.html` files with diagrams embedded inline.
+- If the target exam-study note is already `.html` → update it in place as HTML.
+- If the target exam-study note is a **legacy `.md` file** (cloudfront.md, vpc.md, organizations.md, cognito.md) → **convert it to `.html`** as part of the update: produce `exam-study/{service}.html` with a self-contained HTML document (inline CSS, embedded diagrams), migrate all existing content, then delete the old `.md` file. Update `exam-study/README.md` to reference the new `.html` filename.
+- `saas-security/` guides remain markdown (`guide.md`) — do NOT convert those to HTML.
 
 ## Update Process
 
@@ -22,8 +28,10 @@ When given a service name or file path, update the corresponding files to reflec
 - Note the existing `Last Updated` date
 - Check for any `<!-- STALE: ... -->` comments indicating what specifically needs attention
 
-### Step 2: Research Current Documentation
-- Search AWS documentation for the service's latest features and changes
+### Step 2: Research Current Documentation (Mandatory — Skills + MCP)
+- **Activate the matching skill(s)** from `.kiro/skills/` for the target service first (see the skill-to-service map in `.kiro/steering/exam-study-guide.md`). If a skill exists for the service, using it is REQUIRED.
+- Search AWS documentation via AWS Knowledge MCP + AWS Documentation MCP for the service's latest features and changes
+- Verify current behavior/limits via the `aws` MCP server when needed
 - Fetch detailed guides for any new capabilities
 - Look specifically for:
   - New features added since the `Last Updated` date
@@ -56,20 +64,25 @@ Remove any `<!-- STALE: ... -->` comments that have been addressed.
 
 ### Step 5: Add Change Log Entry
 
-At the bottom of the file, add or update a `## Change Log` section:
-
-```markdown
-## Change Log
+At the bottom of the file, add or update a Change Log section (as a styled HTML table for `.html` notes, or a markdown table for `saas-security` guides):
 
 | Date | Changes |
 |------|---------|
 | {today} | Added: {new feature 1}, {new feature 2}. Updated: {changed item}. |
 | {previous date} | Initial creation |
-```
+
+If converting a legacy `.md` to `.html`, add a Change Log entry noting the format migration.
+
+## Diagram Standards
+
+When updating adds or changes a diagram, use the dedicated diagram tooling and embed inline in the HTML note (do NOT add ASCII art):
+- Architecture/flow with AWS icons → `@diagram-creator` / `draw-io` skill → embed exported SVG/PNG inline
+- Sequence/data-flow/state → `diagram-design` skill → embed HTML/SVG inline
+- When converting a legacy `.md` to `.html`, upgrade existing ASCII diagrams to proper embedded diagrams where it materially improves clarity.
 
 ## What to Update in Each File Type
 
-### For `exam-study/{service}.md`:
+### For `exam-study/{service}.html`:
 - New service capabilities and configuration options
 - Updated pricing or limits
 - New exam question patterns based on new features
@@ -77,6 +90,7 @@ At the bottom of the file, add or update a `## Change Log` section:
 - New threat scenarios the service now mitigates
 - Updated CLI commands or console procedures
 - New integration patterns with other services
+- Diagrams embedded inline (upgrade ASCII to proper diagrams when converting from `.md`)
 
 ### For `saas-security/{service}/guide.md`:
 - New configuration options in manual steps
@@ -103,9 +117,11 @@ At the bottom of the file, add or update a `## Change Log` section:
 
 ## After Updating
 
-- Confirm the file still renders correctly as markdown
+- Confirm the file renders correctly (valid HTML for `.html` notes, valid markdown for `saas-security` guides)
+- If a legacy `.md` was converted → confirm the old `.md` is deleted and `exam-study/README.md` points to the new `.html`
 - Verify all sections are intact and properly formatted
 - Report what was changed in your response to the user:
+  - Whether the file was converted from `.md` to `.html`
   - Number of new features added
   - Number of items updated
   - Number of deprecated items flagged

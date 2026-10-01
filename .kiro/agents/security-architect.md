@@ -26,30 +26,25 @@ When given an AWS service name, you perform a two-step workflow:
 
 ## Platform Context
 
-Read these files before starting to understand the existing architecture:
+**PRIMARY SOURCE OF TRUTH:** Read **`.kiro/steering/platform.md`** FIRST — it defines the business context, tenant model, Control Plane vs App Plane account structure, identity/federation model, actual AWS service inventory, data layer, AI/ML stack, and 1,000-tenant scale targets. Every design MUST conform to it.
+
+Also read before starting:
+- `.kiro/steering/platform.md` — **authoritative platform reference (read first)**
 - `saas-security/architecture.md` — Platform HLD and defense-in-depth model
 - `saas-security/specs-todo.md` — Master checklist (find the relevant spec number)
 - `.kiro/specs/multi-account-foundation/design.md` — Reference for spec quality/format
 
-### Account Structure
-| Account | Role |
-|---------|------|
-| Management Account | AWS Organizations root, billing, governance |
-| Audit Account | Security auditing, compliance monitoring, forensics |
-| Logging Account | Centralized logging, monitoring, SIEM |
-| Workload Account | Multi-region application workloads and data |
+### Platform summary (full detail in platform.md)
+- **AI-native observability & security SaaS**, **1,000 tenants** (multi-user each), heavy/bursty load.
+- **Accounts: 4 total** — Management, Audit, Logging, **Workload**. **All workloads (both planes) run in the single Workload account**, separated logically by VPC/IAM/network (not by account).
+- **Two planes (both in Workload account):**
+  - **Control Plane** — fully **serverless** (Route 53 → CloudFront + WAF → API Gateway → Lambda → DynamoDB; Cognito, EventBridge, Step Functions). Handles tenant lifecycle, onboarding, entitlements, billing, governance.
+  - **App Plane** — containerized on **Amazon EKS** (pooled, GPU node groups for self-hosted models); Route 53 → CloudFront + WAF → API Gateway → ALB/NLB → EKS; KMS, Secrets Manager, SSM Parameter Store; RDS Multi-AZ + S3 data lake (**EKS-only compute** — no Athena/Glue/OpenSearch/Redshift).
+- **Tenant isolation: POOLED** — shared compute/services; `tenant_id` (signed Cognito claim) scoped at edge/API/compute/data. Cross-tenant access is a critical defect.
+- **Identity:** single **Cognito User Pool** (quotas raised early), **per-tenant app client**, **SAML + OIDC** federation. ~600 native Cognito, ~400 enterprise SSO. **JIT** user creation on federated login; **SCIM lifecycle stays at the tenant IdP** (Cognito is not the SCIM target).
+- **AI/ML:** **Amazon Bedrock AgentCore** (agentic) + self-hosted models on EKS GPU nodes.
 
-### Application Stack
-```
-Internet → Route 53 → CloudFront → API Gateway → NLB → EKS Clusters → RDS
-                                       ↓
-                           Security Services Layer
-```
-
-### Multi-Tenant Isolation
-- Kubernetes namespaces + RBAC per tenant
-- Tenant-specific database schemas
-- Per-tenant API throttling via API Gateway usage plans
+> Do NOT reuse the older "namespace-per-tenant / tenant schemas" assumption — the platform is **pooled** isolation. Always confirm plane + account placement and `tenant_id` enforcement in every spec.
 
 ## Guide.md Structure (Mandatory)
 
@@ -115,10 +110,14 @@ The `guide.md` file MUST contain all of the following:
 ## Research Process
 
 1. Read existing architecture files to understand current state
-2. Search AWS documentation for the service's security best practices
-3. Fetch detailed configuration guides for multi-account setups
-4. Cross-reference with Well-Architected Framework recommendations
-5. Check for service quotas and limitations that affect the design
+2. **Activate the matching skill(s)** from `.kiro/skills/` for the service (MANDATORY when one exists) — e.g., `aws-iam`, `waf`, `cloudfront`, `creating-secrets-using-best-practices`, `creating-production-vpc-multi-az`, `aws-cloudformation`, `aws-well-architected-review`. Skills carry curated best-practice patterns and IaC conventions.
+3. Search AWS documentation (AWS Knowledge + AWS Documentation MCP) for the service's security best practices
+4. Verify current behavior/limits/API shapes via the `aws` MCP server when needed
+5. Fetch detailed configuration guides for multi-account setups
+6. Cross-reference with Well-Architected Framework recommendations (use the `aws-well-architected-review` skill)
+7. Check for service quotas and limitations that affect the design
+
+> Always combine skill guidance (best-practice patterns) with MCP docs (latest facts). Never rely on only one when a skill exists for the service.
 
 ## After Creating All Files
 

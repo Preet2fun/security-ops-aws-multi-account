@@ -82,7 +82,7 @@ Create a file at `aws-updates/{year}-week-{nn}.md` with this structure:
 
 | File | Service | Reason |
 |------|---------|--------|
-| exam-study/{service}.md | {Service} | {what changed} |
+| exam-study/{service}.html | {Service} | {what changed} |
 | saas-security/{service}/guide.md | {Service} | {what changed} |
 ```
 
@@ -90,7 +90,7 @@ Create a file at `aws-updates/{year}-week-{nn}.md` with this structure:
 
 For each release that affects a service already covered in this repo:
 
-1. Check if `exam-study/{service-name}.md` exists — if yes, insert at line 2:
+1. Check if the exam-study note exists — look for `exam-study/{service-name}.html` first, then legacy `exam-study/{service-name}.md`. If found, insert an HTML comment near the top of the file (inside `<body>` for HTML, at line 2 for markdown):
    ```
    <!-- STALE: {Feature Title} ({date}) — run @content-updater {service} to refresh -->
    ```
@@ -101,6 +101,8 @@ For each release that affects a service already covered in this repo:
    ```
 
 3. List all flagged files in the digest's "Stale Content Flags" section.
+
+> Note: `<!-- ... -->` comments work in both HTML and markdown, so the same STALE flag format applies to both file types.
 
 ### Step 4: Determine Week Number
 

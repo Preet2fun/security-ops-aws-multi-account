@@ -3,6 +3,8 @@
 ## Purpose
 This steering document drives **Objective 2: SaaS Platform Security Implementation** — building a comprehensive, production-grade security architecture for a multi-tenant ITOM/ITSM SaaS platform on AWS using spec-driven development with both manual and automated (IaC) configuration approaches.
 
+> **MUST READ FIRST: [`platform.md`](./platform.md)** — the authoritative platform reference (business context, tenant model, Control Plane vs App Plane account structure, identity/federation model, actual AWS service inventory, scale targets). Every spec, HLD/LLD, implementation guide, and service configuration MUST align with `platform.md`. It is conditionally included whenever you work under `saas-security/` or `.kiro/specs/`.
+
 ## Platform Architecture
 
 ### Account Structure

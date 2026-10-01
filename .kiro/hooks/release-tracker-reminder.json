@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Weekly Release Tracker Reminder",
+      "trigger": "SessionStart",
+      "description": "Checks if the current week's AWS security digest exists. If missing, reminds to run @release-tracker.",
+      "action": {
+        "type": "command",
+        "command": "YEAR=$(date +%Y) && WEEK=$(date +%V) && FILE=\"aws-updates/${YEAR}-week-${WEEK}.md\" && if [ ! -f \"$FILE\" ]; then echo \"No AWS security digest for week ${WEEK} yet. Run @release-tracker to generate this week's digest and check for stale content.\"; else echo \"\"; fi"
+      }
+    }
+  ]
+}
