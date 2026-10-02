@@ -148,6 +148,19 @@ When creating or updating any study note, you MUST use BOTH the AWS MCP servers 
 4. **Cross-reference** multiple official sources for accuracy
 5. **Cite** relevant documentation URLs in the References section
 
+### Information-source priority (tiered)
+
+AWS MCP is **authoritative and primary** for all AWS service facts. Web crawling supplements it; it never replaces it.
+
+| Tier | Tool | Use for |
+|------|------|---------|
+| 1 (primary) | AWS Knowledge MCP + AWS Documentation MCP + `aws` MCP | All AWS service facts — internals, config, limits, APIs, best practices |
+| 2 (supplement) | **crawl4ai MCP** (`crawl4ai-local`) | Full content of a specific supporting page — AWS blog, feature page, What's New, re:Post — not in the docs index |
+| 3 (fallback) | generic web fetch | Only if crawl4ai fails or is unavailable |
+
+- Never use crawl4ai in place of AWS MCP for core service knowledge.
+- **Exception — `@release-tracker`:** crawl4ai is PRIMARY there, because the Security Blog and What's New feed are web pages, not indexed docs.
+
 ### Skills (always, when one exists for the service)
 Before writing any section for a service, **ALWAYS activate the matching installed skill** under `.kiro/skills/`. Skills carry curated, service-specific best practices, config patterns, and gotchas that supplement the raw docs. Use the skill guidance together with MCP docs — never one without the other when a skill exists.
 

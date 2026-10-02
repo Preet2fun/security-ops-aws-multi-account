@@ -12,9 +12,19 @@ When triggered, perform these steps:
 
 ### Step 1: Research Recent AWS Security Releases
 
-Search for recent announcements from these sources:
+Fetch recent announcements from these sources:
 - **AWS Security Blog** (https://aws.amazon.com/blogs/security/)
 - **AWS What's New — Security, Identity & Compliance** (https://aws.amazon.com/about-aws/whats-new/security-identity-and-compliance/)
+
+**Information-source priority (tiered — follow in order):**
+
+| Tier | Tool | Why |
+|------|------|-----|
+| 1 (PRIMARY) | **crawl4ai MCP** (`crawl4ai-local`) | The Security Blog and What's New are web pages (not indexed docs) — crawl4ai extracts them best. Use it to scrape/crawl the source URLs above. |
+| 2 (deepen) | **AWS Knowledge MCP + AWS Documentation MCP + `aws` MCP** | After identifying a release, use AWS MCP to pull the authoritative doc detail for the affected service |
+| 3 (fallback) | **generic web fetch** | Only if crawl4ai fails or is unavailable |
+
+> Note: `release-tracker` is the one agent where **crawl4ai is primary** — because its sources are blog/news pages, not AWS docs. For enriching a specific release with authoritative service facts, switch to AWS MCP. If crawl4ai errors, fall back to generic web fetch.
 
 Focus on releases from the past 7 days (or since the last digest if one exists in `aws-updates/`).
 

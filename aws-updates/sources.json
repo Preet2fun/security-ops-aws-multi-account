@@ -1,0 +1,134 @@
+{
+  "_comment": "Trusted AWS-only sources for security release tracking. Every feed below was verified reachable and current. Do NOT add non-AWS sources: citations must resolve to aws.amazon.com or docs.aws.amazon.com.",
+  "_verified": "2026-10-02",
+
+  "feeds": [
+    {
+      "id": "whats-new",
+      "name": "AWS What's New (Recent Announcements)",
+      "url": "https://aws.amazon.com/about-aws/whats-new/recent/feed/",
+      "type": "rss",
+      "authority": "official-announcement",
+      "retention_items": 100,
+      "retention_days_approx": 10,
+      "note": "PRIMARY source for release announcements. Holds only ~100 items (~10 days), which is WHY daily collection is mandatory - a 15-day lookback is impossible from a single fetch."
+    },
+    {
+      "id": "security-blog",
+      "name": "AWS Security Blog",
+      "url": "https://aws.amazon.com/blogs/security/feed/",
+      "type": "rss",
+      "authority": "official-blog",
+      "retention_items": 20,
+      "retention_days_approx": 35,
+      "note": "Deep-dive posts, best-practice changes, new-feature walkthroughs. Often the only place a capability is explained in detail."
+    },
+    {
+      "id": "security-bulletins",
+      "name": "AWS Security Bulletins",
+      "url": "https://aws.amazon.com/security/security-bulletins/feed/",
+      "type": "rss",
+      "authority": "official-advisory",
+      "note": "CVEs and AWS security advisories. Always P1 for the platform."
+    },
+    {
+      "id": "guardduty-doc-history",
+      "name": "Amazon GuardDuty Documentation History",
+      "url": "https://docs.aws.amazon.com/guardduty/latest/ug/amazon-guardduty-doc-history.rss",
+      "type": "rss",
+      "authority": "official-docs",
+      "service_hint": "Amazon GuardDuty",
+      "note": "Per-service doc change log. GuardDuty is the only in-scope service that exposes a working doc-history RSS (verified 2026-10-02); the rest of the AWS doc-history pages are JS-rendered with no RSS equivalent."
+    }
+  ],
+
+  "_dead_sources_do_not_retry": [
+    {
+      "url": "https://aws.amazon.com/api/dirs/items/search?item.directoryId=whats-new",
+      "reason": "JSON directory API is frozen - newest postDateTime is 2024-05-17 despite 16281 hits. Unusable for current releases. Verified 2026-10-02."
+    },
+    {
+      "url": "https://aws.amazon.com/about-aws/whats-new/{category}/feed/",
+      "reason": "Category-scoped What's New feeds return 404 (tested security-identity-and-compliance, compute, 2026)."
+    },
+    {
+      "url": "https://docs.aws.amazon.com/{service}/latest/{guide}/doc-history.rss",
+      "reason": "Not a general convention. Only GuardDuty responds; waf/kms/securityhub/IAM all 404."
+    }
+  ],
+
+  "scope_note": "34 services from the official AWS Security, Identity & Compliance products catalog. 'match' entries are case-insensitive regexes applied to feed title + summary. Matching is intentionally generous: the collector tags candidates, the release-tracker agent makes the final relevance call. Nothing is dropped silently - unmatched items land in the 'security_net' or 'unclassified' buckets.",
+
+  "services": [
+    { "name": "AWS Identity and Access Management (IAM)", "slug": "iam", "category": "Identity & Access Management", "exam_domain": "4 - Identity & Access Management", "match": ["\\bIAM\\b", "Identity and Access Management", "IAM Access Analyzer", "Access Analyzer", "Roles Anywhere", "permissions boundar", "\\bSTS\\b", "Security Token Service"] },
+    { "name": "AWS IAM Identity Center", "slug": "iam-identity-center", "category": "Identity & Access Management", "exam_domain": "4 - Identity & Access Management", "match": ["IAM Identity Center", "AWS SSO", "AWS Single Sign-On", "identity-aware session", "trusted identity propagation"] },
+    { "name": "Amazon Cognito", "slug": "cognito", "category": "Identity & Access Management", "exam_domain": "4 - Identity & Access Management", "match": ["Cognito"] },
+    { "name": "Amazon Verified Permissions", "slug": "verified-permissions", "category": "Identity & Access Management", "exam_domain": "4 - Identity & Access Management", "match": ["Verified Permissions", "Cedar polic"] },
+    { "name": "AWS Directory Service", "slug": "directory-service", "category": "Identity & Access Management", "exam_domain": "4 - Identity & Access Management", "match": ["Directory Service", "Managed Microsoft AD", "AD Connector", "Simple AD"] },
+    { "name": "AWS Resource Access Manager (RAM)", "slug": "ram", "category": "Identity & Access Management", "exam_domain": "4 - Identity & Access Management", "match": ["Resource Access Manager", "\\bAWS RAM\\b", "resource shar"] },
+    { "name": "AWS Organizations", "slug": "organizations", "category": "Identity & Access Management", "exam_domain": "6 - Security Foundations & Governance", "match": ["AWS Organizations", "service control polic", "resource control polic", "\\bSCPs?\\b", "\\bRCPs?\\b", "declarative polic", "delegated administrator"] },
+
+    { "name": "Amazon GuardDuty", "slug": "guardduty", "category": "Detection & Response", "exam_domain": "1 - Threat Detection & Incident Response", "match": ["GuardDuty"] },
+    { "name": "Amazon Inspector", "slug": "inspector", "category": "Detection & Response", "exam_domain": "1 - Threat Detection & Incident Response", "match": ["Amazon Inspector", "\\bInspector\\b"] },
+    { "name": "AWS Security Hub", "slug": "security-hub", "category": "Detection & Response", "exam_domain": "1 - Threat Detection & Incident Response", "match": ["Security Hub", "\\bCSPM\\b", "\\bASFF\\b", "\\bOCSF\\b", "exposure finding"] },
+    { "name": "Amazon Detective", "slug": "detective", "category": "Detection & Response", "exam_domain": "1 - Threat Detection & Incident Response", "match": ["Amazon Detective"] },
+    { "name": "AWS Security Incident Response", "slug": "security-incident-response", "category": "Detection & Response", "exam_domain": "1 - Threat Detection & Incident Response", "match": ["Security Incident Response", "Customer Incident Response Team", "\\bCIRT\\b"] },
+    { "name": "Amazon Security Lake", "slug": "security-lake", "category": "Detection & Response", "exam_domain": "2 - Security Logging & Monitoring", "match": ["Security Lake"] },
+    { "name": "AWS Config", "slug": "config", "category": "Detection & Response", "exam_domain": "6 - Security Foundations & Governance", "match": ["AWS Config", "conformance pack", "config rule", "configuration recorder", "configuration aggregator"] },
+    { "name": "AWS CloudTrail", "slug": "cloudtrail", "category": "Detection & Response", "exam_domain": "2 - Security Logging & Monitoring", "match": ["CloudTrail"] },
+    { "name": "Amazon CloudWatch", "slug": "cloudwatch", "category": "Detection & Response", "exam_domain": "2 - Security Logging & Monitoring", "match": ["CloudWatch"] },
+
+    { "name": "AWS Network Firewall", "slug": "network-firewall", "category": "Network & Application Protection", "exam_domain": "3 - Infrastructure Security", "match": ["Network Firewall"] },
+    { "name": "AWS WAF", "slug": "waf", "category": "Network & Application Protection", "exam_domain": "3 - Infrastructure Security", "match": ["AWS WAF", "\\bWAF\\b", "web ACL", "Bot Control", "Fraud Control", "managed rule group"] },
+    { "name": "AWS Shield", "slug": "shield", "category": "Network & Application Protection", "exam_domain": "3 - Infrastructure Security", "match": ["AWS Shield", "Shield Advanced", "Shield Response Team", "\\bDDoS\\b"] },
+    { "name": "AWS Firewall Manager", "slug": "firewall-manager", "category": "Network & Application Protection", "exam_domain": "3 - Infrastructure Security", "match": ["Firewall Manager"] },
+    { "name": "AWS Verified Access", "slug": "verified-access", "category": "Network & Application Protection", "exam_domain": "3 - Infrastructure Security", "match": ["Verified Access"] },
+    { "name": "Amazon VPC (security features)", "slug": "vpc", "category": "Network & Application Protection", "exam_domain": "3 - Infrastructure Security", "match": ["Amazon VPC", "\\bVPC\\b", "security group", "network ACL", "\\bNACL\\b", "PrivateLink", "VPC endpoint", "Flow Logs", "VPC Lattice", "Transit Gateway", "VPC Route Server", "VPC Block Public Access"] },
+    { "name": "Amazon Route 53 Resolver DNS Firewall", "slug": "route53-dns-firewall", "category": "Network & Application Protection", "exam_domain": "3 - Infrastructure Security", "match": ["DNS Firewall", "Route 53 Resolver", "Route 53 Profiles"] },
+
+    { "name": "AWS Key Management Service (KMS)", "slug": "kms", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["Key Management Service", "\\bKMS\\b", "customer managed key", "\\bCMK\\b", "key polic", "envelope encryption", "post-quantum", "\\bML-KEM\\b", "\\bML-DSA\\b"] },
+    { "name": "AWS CloudHSM", "slug": "cloudhsm", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["CloudHSM", "\\bHSM\\b", "FIPS 140"] },
+    { "name": "AWS Certificate Manager (ACM)", "slug": "acm", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["Certificate Manager", "\\bACM\\b", "public certificate", "exportable certificate"] },
+    { "name": "AWS Private Certificate Authority", "slug": "private-ca", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["Private Certificate Authority", "Private CA", "ACM PCA", "AWS Private CA", "Connector for AD", "Connector for SCEP"] },
+    { "name": "AWS Secrets Manager", "slug": "secrets-manager", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["Secrets Manager", "secret rotation"] },
+    { "name": "Amazon Macie", "slug": "macie", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["Macie", "sensitive data discovery"] },
+    { "name": "AWS Payment Cryptography", "slug": "payment-cryptography", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["Payment Cryptography", "\\bPCI PIN\\b", "\\bTR-34\\b", "\\bTR-31\\b"] },
+    { "name": "AWS Backup", "slug": "backup", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["AWS Backup", "backup vault", "logically air-gapped", "Backup Audit Manager", "restore testing"] },
+
+    { "name": "AWS Artifact", "slug": "artifact", "category": "Compliance & Governance", "exam_domain": "6 - Security Foundations & Governance", "match": ["AWS Artifact"] },
+    { "name": "AWS Audit Manager", "slug": "audit-manager", "category": "Compliance & Governance", "exam_domain": "6 - Security Foundations & Governance", "match": ["Audit Manager"] },
+    { "name": "AWS Control Tower", "slug": "control-tower", "category": "Compliance & Governance", "exam_domain": "6 - Security Foundations & Governance", "match": ["Control Tower", "landing zone", "\\bAFT\\b", "Account Factory"] }
+  ],
+
+  "adjacent_watch": {
+    "_comment": "Not part of the core 34, but in scope for specific exam domains or the SaaS platform. Reported in a separate digest section so they never crowd out the core 34.",
+    "services": [
+      { "name": "Amazon Bedrock (AI/ML security)", "slug": "bedrock", "exam_domain": "7 - Generative AI & ML Security", "match": ["Bedrock Guardrails", "Bedrock.*guardrail", "guardrail", "Amazon Bedrock.*secur", "prompt injection", "AgentCore.*identit", "Bedrock.*IAM", "Bedrock.*KMS"] },
+      { "name": "Amazon SageMaker (AI/ML security)", "slug": "sagemaker", "exam_domain": "7 - Generative AI & ML Security", "match": ["SageMaker.*secur", "SageMaker.*IAM", "SageMaker.*VPC", "SageMaker.*encrypt", "SageMaker Role Manager"] },
+      { "name": "AWS Systems Manager", "slug": "systems-manager", "exam_domain": "6 - Security Foundations & Governance", "match": ["Systems Manager", "Session Manager", "Patch Manager", "Parameter Store", "\\bSSM\\b"] },
+      { "name": "Container & EKS security", "slug": "container-security", "exam_domain": "3 - Infrastructure Security", "match": ["EKS.*secur", "EKS Pod Identity", "ECR.*scan", "ECR.*secur", "EKS.*IAM", "runtime monitoring", "Pod Security"] },
+      { "name": "Amazon CloudFront", "slug": "cloudfront", "exam_domain": "3 - Infrastructure Security", "match": ["CloudFront", "origin access control", "\\bOAC\\b", "signed URL", "field-level encryption"] },
+      { "name": "Security automation (EventBridge / Lambda / Step Functions)", "slug": "security-automation", "exam_domain": "1 - Threat Detection & Incident Response", "match": ["EventBridge.*secur", "automated remediation", "Step Functions.*secur", "Lambda.*IAM", "Lambda.*VPC"] },
+      { "name": "AWS Resilience & Recovery", "slug": "resilience", "exam_domain": "Platform - Recovery Controls", "match": ["Resilience Hub", "Application Recovery Controller", "\\bARC\\b.*Region switch", "Fault Injection Service", "\\bFIS\\b"] },
+      { "name": "AWS Signer / code integrity", "slug": "signer", "exam_domain": "6 - Security Foundations & Governance", "match": ["AWS Signer", "code signing", "Notation", "image signing", "\\bSBOM\\b", "supply chain"] }
+    ]
+  },
+
+  "security_net": {
+    "_comment": "Catch-all. Any item matching these terms but matching no service above is retained in the archive and surfaced in the digest's 'Review Queue' section. This is the no-misses guarantee: a release for an unanticipated service or a renamed feature still reaches the digest for human judgment.",
+    "match": [
+      "secur", "encrypt", "complian", "vulnerab", "threat detect", "authentic", "authoriz",
+      "credential", "certificate", "\\bFIPS\\b", "\\bPCI DSS\\b", "\\bHIPAA\\b", "SOC 2",
+      "ISO 27001", "\\bFedRAMP\\b", "post-quantum", "\\bMFA\\b", "passkey", "zero trust",
+      "ransomware", "malware", "least privilege", "data protection", "audit log",
+      "access control", "\\bCVE-", "privilege escalation", "exfiltrat", "\\bTLS\\b", "\\bmTLS\\b"
+    ]
+  },
+
+  "importance_rubric": {
+    "_comment": "The release-tracker agent MUST assign exactly one of these to every release.",
+    "P1": "New service, new capability that changes a security control's blast radius, a breaking/deprecating change, a security advisory or CVE affecting a service we run, or a new exam-testable mechanism. Demands action this week.",
+    "P2": "Meaningful enhancement to an in-scope service: new finding type, new managed rule, new integration, new policy condition key, new compliance standard. Worth a study-note update and a platform backlog item.",
+    "P3": "Region expansion, quota increase, console/UX change, pricing change, or availability news. Awareness only, no action."
+  }
+}

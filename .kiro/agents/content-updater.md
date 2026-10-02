@@ -33,6 +33,17 @@ Exam-study notes are now authored as self-contained `.html` files with diagrams 
 - Search AWS documentation via AWS Knowledge MCP + AWS Documentation MCP for the service's latest features and changes
 - Verify current behavior/limits via the `aws` MCP server when needed
 - Fetch detailed guides for any new capabilities
+
+**Information-source priority (tiered — follow in order):**
+
+| Tier | Tool | When |
+|------|------|------|
+| 1 (primary) | **AWS Knowledge MCP + AWS Documentation MCP + `aws` MCP** | Authoritative source for what changed in a service — always start here |
+| 2 (supplement) | **crawl4ai MCP** (`crawl4ai-local`) | Pull the full content of a specific AWS blog/announcement/feature URL (e.g., one flagged in a `<!-- STALE -->` comment or an `aws-updates/` digest) |
+| 3 (fallback) | **generic web fetch** | Only if crawl4ai fails or is unavailable |
+
+- Never replace AWS MCP with crawl4ai for core service facts. Use crawl4ai to render a specific supporting page; fall back to generic web fetch if it errors.
+
 - Look specifically for:
   - New features added since the `Last Updated` date
   - Deprecated features or settings

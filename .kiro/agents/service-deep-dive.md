@@ -110,6 +110,22 @@ Before and during writing, use BOTH the installed skills and the AWS MCP servers
 6. Include relevant documentation URLs in the References section
 7. In the Change Log, record which skills and MCP sources were used
 
+### Information-source priority (tiered — follow in order)
+
+For AWS service facts (internals, config, limits, APIs, best practices), **AWS MCP is authoritative and primary**. Use web crawling only to supplement or when the docs don't cover something.
+
+| Tier | Tool | When |
+|------|------|------|
+| 1 (primary) | **AWS Knowledge MCP + AWS Documentation MCP** | All AWS service facts — always start here; it's authoritative and searchable |
+| 1 (primary) | **`aws` MCP server** | Verify live behavior, limits, API shapes |
+| 2 (supplement) | **crawl4ai MCP** (`crawl4ai-local`) | AWS blog posts, feature pages, What's New announcements, re:Post articles not in the docs index — when you have a specific URL (often one AWS MCP returned) and need the full page |
+| 3 (fallback) | **generic web fetch** | Only if crawl4ai fails or is unavailable |
+
+Rules:
+- **Never** replace AWS MCP with crawl4ai for core service knowledge — AWS MCP is the source of truth.
+- Reach for crawl4ai when AWS MCP search returns nothing useful, or to pull the full content of a specific supporting page (blog/announcement/feature).
+- If crawl4ai errors or is disconnected, fall back to the generic web fetch tool.
+
 ## After Creating the File
 
 - Update `exam-study/README.md` — mark the service as completed in the progress tracker
