@@ -57,10 +57,18 @@
     }
   ],
 
-  "scope_note": "34 services from the official AWS Security, Identity & Compliance products catalog. 'match' entries are case-insensitive regexes applied to feed title + summary. Matching is intentionally generous: the collector tags candidates, the release-tracker agent makes the final relevance call. Nothing is dropped silently - unmatched items land in the 'security_net' or 'unclassified' buckets.",
+  "scope_note": "34 services from the official AWS Security, Identity & Compliance products catalog. 'match' entries are case-insensitive regexes.",
+
+  "matching_rules": {
+    "_comment": "Two-tier matching. Without this, '\\bIAM\\b' tags every Redshift/ElastiCache/SageMaker announcement that merely mentions an IAM policy, and a 15-day digest becomes unreadable.",
+    "title_match": "A regex hit in the item TITLE means the release IS FOR that service. AWS announcement titles always name the owning service, so this is a reliable signal. These populate the per-service sections of the digest.",
+    "body_match": "A regex hit only in the summary/categories means the release merely REFERENCES the service. These are recorded as 'mentions' and surfaced as related reading, never as a release for that service.",
+    "demote_if": "Resolves overlapping families. If a more specific service also matched the title, the generic one is dropped - e.g. 'IAM Identity Center extends multi-Region support' belongs to IAM Identity Center, not to IAM.",
+    "bucket_rule": "core = at least one title match on the 34. adjacent = title match on adjacent_watch only. review-queue = security_net hit or mentions only. advisory/docs = forced in by feed authority."
+  },
 
   "services": [
-    { "name": "AWS Identity and Access Management (IAM)", "slug": "iam", "category": "Identity & Access Management", "exam_domain": "4 - Identity & Access Management", "match": ["\\bIAM\\b", "Identity and Access Management", "IAM Access Analyzer", "Access Analyzer", "Roles Anywhere", "permissions boundar", "\\bSTS\\b", "Security Token Service"] },
+    { "name": "AWS Identity and Access Management (IAM)", "slug": "iam", "category": "Identity & Access Management", "exam_domain": "4 - Identity & Access Management", "match": ["\\bIAM\\b", "Identity and Access Management", "IAM Access Analyzer", "Access Analyzer", "Roles Anywhere", "permissions boundar", "\\bSTS\\b", "Security Token Service"], "demote_if": ["AWS IAM Identity Center"] },
     { "name": "AWS IAM Identity Center", "slug": "iam-identity-center", "category": "Identity & Access Management", "exam_domain": "4 - Identity & Access Management", "match": ["IAM Identity Center", "AWS SSO", "AWS Single Sign-On", "identity-aware session", "trusted identity propagation"] },
     { "name": "Amazon Cognito", "slug": "cognito", "category": "Identity & Access Management", "exam_domain": "4 - Identity & Access Management", "match": ["Cognito"] },
     { "name": "Amazon Verified Permissions", "slug": "verified-permissions", "category": "Identity & Access Management", "exam_domain": "4 - Identity & Access Management", "match": ["Verified Permissions", "Cedar polic"] },
@@ -83,12 +91,12 @@
     { "name": "AWS Shield", "slug": "shield", "category": "Network & Application Protection", "exam_domain": "3 - Infrastructure Security", "match": ["AWS Shield", "Shield Advanced", "Shield Response Team", "\\bDDoS\\b"] },
     { "name": "AWS Firewall Manager", "slug": "firewall-manager", "category": "Network & Application Protection", "exam_domain": "3 - Infrastructure Security", "match": ["Firewall Manager"] },
     { "name": "AWS Verified Access", "slug": "verified-access", "category": "Network & Application Protection", "exam_domain": "3 - Infrastructure Security", "match": ["Verified Access"] },
-    { "name": "Amazon VPC (security features)", "slug": "vpc", "category": "Network & Application Protection", "exam_domain": "3 - Infrastructure Security", "match": ["Amazon VPC", "\\bVPC\\b", "security group", "network ACL", "\\bNACL\\b", "PrivateLink", "VPC endpoint", "Flow Logs", "VPC Lattice", "Transit Gateway", "VPC Route Server", "VPC Block Public Access"] },
+    { "name": "Amazon VPC (security features)", "slug": "vpc", "category": "Network & Application Protection", "exam_domain": "3 - Infrastructure Security", "match": ["Amazon VPC", "\\bVPC\\b", "security group", "network ACL", "\\bNACL\\b", "PrivateLink", "VPC endpoint", "Flow Logs", "VPC Lattice", "Transit Gateway", "VPC Route Server", "VPC Block Public Access"], "demote_if": ["AWS Network Firewall", "Amazon Route 53 Resolver DNS Firewall", "AWS Verified Access"] },
     { "name": "Amazon Route 53 Resolver DNS Firewall", "slug": "route53-dns-firewall", "category": "Network & Application Protection", "exam_domain": "3 - Infrastructure Security", "match": ["DNS Firewall", "Route 53 Resolver", "Route 53 Profiles"] },
 
     { "name": "AWS Key Management Service (KMS)", "slug": "kms", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["Key Management Service", "\\bKMS\\b", "customer managed key", "\\bCMK\\b", "key polic", "envelope encryption", "post-quantum", "\\bML-KEM\\b", "\\bML-DSA\\b"] },
     { "name": "AWS CloudHSM", "slug": "cloudhsm", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["CloudHSM", "\\bHSM\\b", "FIPS 140"] },
-    { "name": "AWS Certificate Manager (ACM)", "slug": "acm", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["Certificate Manager", "\\bACM\\b", "public certificate", "exportable certificate"] },
+    { "name": "AWS Certificate Manager (ACM)", "slug": "acm", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["Certificate Manager", "\\bACM\\b", "public certificate", "exportable certificate"], "demote_if": ["AWS Private Certificate Authority"] },
     { "name": "AWS Private Certificate Authority", "slug": "private-ca", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["Private Certificate Authority", "Private CA", "ACM PCA", "AWS Private CA", "Connector for AD", "Connector for SCEP"] },
     { "name": "AWS Secrets Manager", "slug": "secrets-manager", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["Secrets Manager", "secret rotation"] },
     { "name": "Amazon Macie", "slug": "macie", "category": "Data Protection", "exam_domain": "5 - Data Protection", "match": ["Macie", "sensitive data discovery"] },

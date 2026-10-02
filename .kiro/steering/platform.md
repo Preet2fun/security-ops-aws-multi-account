@@ -222,6 +222,18 @@ All earlier open items are now decided:
 | Data-lake compute | **EKS-only.** No Athena / Glue / OpenSearch / Redshift. |
 | Agentic AI | **Amazon Bedrock AgentCore** for agentic workloads; self-hosted models on EKS GPU nodes for the rest. |
 
+## 12. Design & IaC Standards (locked — apply to every spec/implementation)
+
+| # | Standard |
+|---|----------|
+| **IaC** | **CloudFormation ONLY** — platform is AWS-native, no Terraform. Each `saas-security/{service}/` has `template.yaml`; no `.tf` files. |
+| **HLD/LLD artifact** | Each service produces a dedicated self-contained **`{service}-security-design.html`** (HLD + LLD + all diagrams embedded inline + security-config significance). The spec `design.md` stays lightweight and points to it; producing the HTML is an explicit task in `tasks.md`. |
+| **1,000-tenant justification** | Every design MUST justify reliability at **1,000-tenant scale** — defense-in-depth, data isolation, data security — with a mandatory **security hole/gap analysis** covering every operational, performance, scalability, availability, and security failure mode and its mitigation. No gap left unaddressed. |
+| **Latest GUI** | Step-by-step console guides must reflect the **current AWS Console navigation/flow** (verify via crawl4ai/MCP), never stale UI. |
+| **Tenant isolation proof** | Pooled isolation — every design proves `tenant_id` enforcement edge→API→compute→data; cross-tenant access is a critical defect; validation includes a tenant-isolation test. |
+
+> These standards are enforced by the `@security-architect` agent and detailed in `saas-security-implementation.md`.
+
 ---
 
 **This document drives all SaaS security platform design. Every `saas-security/` implementation and `.kiro/specs/` design MUST reference and conform to it.**

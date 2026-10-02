@@ -44,52 +44,73 @@ Every security implementation follows this process:
 
 ### Specs Location
 - Kiro specs: `.kiro/specs/{service-name}/` (requirements.md, design.md, tasks.md)
-- Implementation: `saas-security/{service-name}/` (guide.md, main.tf, template.yaml, scripts/)
+- Implementation: `saas-security/{service-name}/` (`{service}-security-design.html`, guide.md, template.yaml, scripts/)
+
+## Locked Design & IaC Decisions
+
+These apply to EVERY SaaS security spec and implementation:
+
+1. **IaC = CloudFormation ONLY.** The platform is AWS-native — no Terraform. Each service folder has a `template.yaml`; never `main.tf`/`variables.tf`/`outputs.tf`.
+2. **HLD/LLD lives in a dedicated self-contained `.html` file** per service — `{service-name}-security-design.html` — with all architecture + flow diagrams embedded inline and every security configuration explained with its significance. The spec's `design.md` stays lightweight and points to this HTML. Producing the HTML is an explicit task in `tasks.md`.
+3. **Every design must justify reliability at 1,000-tenant scale** — defense-in-depth, data isolation, data security — with no failure gaps. A mandatory section enumerates every operational/performance/scalability/availability/security hole and its mitigation.
+4. **Step-by-step console guides use the LATEST AWS GUI flow** (verified via crawl4ai/MCP), never stale UI steps.
 
 ## Repository Structure
 
 ```
 saas-security/
-├── README.md              # Implementation overview and progress
-├── specs-todo.md          # Master checklist (35 specs)
-├── architecture.md        # Platform HLD + defense-in-depth model
-└── {service-name}/        # Per-service implementation (flat)
-    ├── guide.md           # HLD + LLD + manual console guide + validation
-    ├── main.tf            # Terraform module
-    ├── variables.tf       # Terraform variables
-    ├── outputs.tf         # Terraform outputs
-    ├── template.yaml      # CloudFormation template
+├── README.md                          # Implementation overview and progress
+├── specs-todo.md                      # Master checklist (35 specs)
+├── architecture.md                    # Platform HLD + defense-in-depth model
+└── {service-name}/                    # Per-service implementation (flat, CloudFormation-only)
+    ├── {service-name}-security-design.html  # PRIMARY design artifact: HLD + LLD + diagrams + 1,000-tenant justification
+    ├── guide.md                       # Manual console guide (latest GUI) + validation + rollback
+    ├── template.yaml                  # CloudFormation template (ONLY IaC)
     └── scripts/
-        ├── deploy.sh      # Deployment automation
-        └── validate.sh    # Validation and testing
+        ├── deploy.sh                  # Deployment automation
+        └── validate.sh                # Validation + tenant-isolation test
 ```
 
-## Guide.md Structure (Per Service)
+## `{service}-security-design.html` Structure (Primary Design Artifact)
 
-Every `guide.md` file must contain:
+A self-contained HTML doc (inline CSS, embedded diagrams) — the authoritative HLD/LLD:
 
 ### Part 1: High-Level Design (HLD)
-- Why this service is needed for the platform
-- Architecture diagram showing integration points
+- Why this service is needed; where it sits (Control Plane vs App Plane, single Workload account)
+- Architecture diagram (embedded inline) + integration points
 - Defense-in-depth layer classification
-- Multi-account deployment model
 
 ### Part 2: Low-Level Design (LLD)
-- Detailed configuration specifications
-- IAM policies and resource policies (full JSON)
-- Network requirements
-- Data flow with encryption points
-- Multi-tenant considerations
+- Detailed config specs with significance; IAM/resource policies (full JSON); network requirements
+- All flow diagrams embedded inline (request/response, auth/token, data flow w/ encryption, cross-service, failure/fallback)
+- KMS/encryption design
 
-### Part 3: Manual Configuration Guide
-- Numbered step-by-step AWS Console instructions
-- Navigation paths, settings, and validation checkpoints
-- Why each setting matters from a security perspective
+### Part 3: 1,000-Tenant Reliability Justification (mandatory)
+- Pooled tenant isolation: how `tenant_id` is enforced edge→API→compute→data (prove no cross-tenant path)
+- Data isolation & security (per-tenant separation, KMS CMK scoping, residency)
+- Scalability (quotas/limits at 1,000 tenants + headroom), performance under bursty load
+- Availability/resilience, blast-radius containment, noisy-neighbor controls
+- **Security hole/gap analysis** — every failure/misconfig/attack path + its mitigation (no gap unaddressed)
+- Operational: tenant-tagged monitoring/logging/alerting
 
-### Part 4: Validation Procedures
-- Verification steps
-- Test cases
-- Compliance validation (SOC 2, ISO 27001)
+### Part 4: Security Configuration Catalog
+- Every security setting, recommended value, and WHY (default vs recommended) + compliance mapping (SOC 2 / ISO 27001 / GDPR)
+
+> Diagrams via `draw-io` (AWS-icon architecture) and `diagram-design` (sequence/data-flow) skills, embedded inline.
+
+## `guide.md` Structure (Manual Console Guide)
+
+### Part 1: Manual Configuration Guide
+- Numbered AWS Console steps using the **latest GUI navigation/flow**
+- Each step: navigation path, settings, security significance; validation checkpoint per section
+
+### Part 2: Validation Procedures
+- Verification steps, test cases (incl. a **tenant-isolation test**), expected behavior, compliance validation
+
+### Part 3: Rollback Procedures
+- Safe teardown steps
+
+> `guide.md` opens with a link to `{service-name}-security-design.html` as the authoritative HLD/LLD.
 
 ## Defense-in-Depth Model
 
@@ -148,16 +169,18 @@ Every `guide.md` file must contain:
 ### Workflow
 1. Pick a service from `specs-todo.md`
 2. Run `@security-architect {service}` — it creates the spec AND implementation
-3. Review the Kiro spec (requirements → design → tasks)
-4. Hand `guide.md` to your security engineer for manual configuration
-5. Deploy IaC (Terraform or CloudFormation) for automation
+3. Review the Kiro spec (requirements → lightweight design → tasks) and the `{service}-security-design.html` (HLD/LLD)
+4. Hand the `.html` design + `guide.md` to your security engineer (design to understand, guide to configure)
+5. Deploy the **CloudFormation** `template.yaml` for automation (CFN is the only IaC — no Terraform)
 6. Periodically run `@release-tracker` to check for AWS updates
 
-## MCP Server Usage
+## MCP Server & Tool Usage
 
-- **AWS Knowledge MCP** — search documentation for best practices
-- **AWS Documentation MCP** — fetch detailed configuration guides
-- **Terraform MCP** — registry lookups for modules and providers
+- **AWS Knowledge MCP** — search documentation for best practices (primary)
+- **AWS Documentation MCP** — fetch detailed configuration guides (primary)
+- **`aws` MCP server** — verify live behavior, limits, API shapes
+- **crawl4ai MCP (`crawl4ai-local`)** — pull the latest AWS Console GUI flows + blog/feature pages (supplement); generic web fetch as fallback
+- Activate matching **skills** from `.kiro/skills/` (mandatory when one exists)
 - Cross-reference all configurations with official AWS documentation
 
 ## Quality Standards

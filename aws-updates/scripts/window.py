@@ -163,27 +163,34 @@ def main():
 
     in_window.sort(key=lambda r: r.get("published") or "", reverse=True)
 
-    # Group core items by service, preserving the catalog order from sources.json
+    # Group by service, preserving the catalog order from sources.json.
+    # Only TITLE matches ('services') open a per-service section; body-only
+    # matches ('mentions') are listed separately so they cannot be mistaken for
+    # a release belonging to that service.
     catalog = OrderedDict((s["name"], s) for s in sources["services"])
     by_service = defaultdict(list)
-    adjacent, advisories, review_queue, docs = [], [], [], []
+    mentions_by_service = defaultdict(list)
+    adjacent, advisories, review_queue, low_signal = [], [], [], []
 
     for rec in in_window:
-        if rec["bucket"] == "core" and rec.get("services"):
-            for name in rec["services"]:
-                if name in catalog:
-                    by_service[name].append(rec)
-        elif rec["bucket"] == "docs":
-            docs.append(rec)
-            for name in rec.get("services", []):
-                if name in catalog:
-                    by_service[name].append(rec)
-        elif rec["bucket"] == "advisory":
+        if rec.get("bucket") == "out-of-scope":
+            continue
+
+        for name in rec.get("services", []):
+            if name in catalog:
+                by_service[name].append(rec)
+        for name in rec.get("mentions", []):
+            if name in catalog:
+                mentions_by_service[name].append(rec)
+
+        if rec["bucket"] == "advisory":
             advisories.append(rec)
         elif rec["bucket"] == "adjacent":
             adjacent.append(rec)
-        else:
+        elif rec["bucket"] == "review-queue":
             review_queue.append(rec)
+        elif rec["bucket"] == "low-signal":
+            low_signal.append(rec)
 
     silent = [name for name in catalog if not by_service.get(name)]
 
@@ -202,13 +209,16 @@ def main():
             "advisories": len(advisories),
             "adjacent": len(adjacent),
             "review_queue": len(review_queue),
+            "low_signal": len(low_signal),
             "undated_in_archive": len(undated),
         },
         "by_service": {k: v for k, v in by_service.items()},
+        "mentions_by_service": {k: v for k, v in mentions_by_service.items()},
         "silent_services": silent,
         "advisories": advisories,
         "adjacent": adjacent,
         "review_queue": review_queue,
+        "low_signal": low_signal,
     }
 
     if args.json:
@@ -263,10 +273,30 @@ def main():
             continue
         meta = catalog[name]
         w("")
-        w("### {} ({} item(s))".format(name, len(recs)))
+        w("### {} ({} release(s))".format(name, len(recs)))
         w("- category: {} | exam domain: {}".format(meta["category"], meta["exam_domain"]))
         for rec in sorted(recs, key=lambda r: r.get("published") or "", reverse=True):
             emit(rec)
+        extra = mentions_by_service.get(name)
+        if extra:
+            w("  - _also referenced by {} other release(s) (not {} releases):_ {}".format(
+                len(extra), name,
+                "; ".join(r["title"][:80] for r in extra[:5])))
+    w("")
+
+    w("## Incidental mentions only — no release of their own")
+    w("_These services were named inside another service's announcement. "
+      "Useful context, but do NOT report them as releases._")
+    any_mention = False
+    for name in catalog:
+        if by_service.get(name) or not mentions_by_service.get(name):
+            continue
+        any_mention = True
+        w("- **{}**: {}".format(name, "; ".join(
+            "{} ({})".format(r["title"][:90], (r.get("published") or "")[:10])
+            for r in mentions_by_service[name][:6])))
+    if not any_mention:
+        w("_none_")
     w("")
 
     w("## Security advisories / bulletins ({})".format(len(advisories)))
@@ -279,11 +309,22 @@ def main():
         emit(rec)
     w("")
 
-    w("## Review queue — matched the security net but no in-scope service ({})".format(
+    w("## Review queue — security-shaped title, no mapped service ({})".format(
         len(review_queue)))
-    w("_Judge each one: promote to a service section, or drop as out of scope._")
+    w("_Judge each one. A brand-new AWS security service appears HERE first, "
+      "because sources.json cannot know about it yet. Promote genuine releases "
+      "into the digest and add the service to sources.json._")
     for rec in review_queue:
         emit(rec)
+    w("")
+
+    w("## Low signal ({}) — archived for completeness, titles only".format(len(low_signal)))
+    w("_Security terms appeared only in the body, not the subject. Normally "
+      "incidental. Scan the titles; expand from the archive only if one looks "
+      "wrongly filed._")
+    for rec in low_signal:
+        w("- {} — {} ({})".format(
+            (rec.get("published") or "????")[:10], rec["title"], rec["link"]))
     w("")
 
     w("## No activity this window ({} of 34)".format(len(silent)))

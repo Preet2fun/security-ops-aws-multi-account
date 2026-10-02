@@ -1,0 +1,53 @@
+{
+  "runs": [
+    {
+      "at": "2026-10-02T02:30:14.277414Z",
+      "new_items": 395,
+      "feeds_ok": 4,
+      "feeds_failed": 0
+    },
+    {
+      "at": "2026-10-02T02:30:19.378840Z",
+      "new_items": 0,
+      "feeds_ok": 4,
+      "feeds_failed": 0
+    },
+    {
+      "at": "2026-10-02T02:54:38.649524Z",
+      "new_items": 0,
+      "feeds_ok": 4,
+      "feeds_failed": 0
+    },
+    {
+      "at": "2026-10-02T03:24:29.420899Z",
+      "new_items": 1,
+      "feeds_ok": 4,
+      "feeds_failed": 0
+    }
+  ],
+  "feeds": {
+    "whats-new": {
+      "status": "ok",
+      "items_in_feed": 100,
+      "new": 1
+    },
+    "security-blog": {
+      "status": "ok",
+      "items_in_feed": 20,
+      "new": 0
+    },
+    "security-bulletins": {
+      "status": "ok",
+      "items_in_feed": 92,
+      "new": 0
+    },
+    "guardduty-doc-history": {
+      "status": "ok",
+      "items_in_feed": 230,
+      "new": 0
+    }
+  },
+  "last_run": "2026-10-02T03:24:29.420899Z",
+  "last_run_new_items": 1,
+  "archive_total": 396
+}

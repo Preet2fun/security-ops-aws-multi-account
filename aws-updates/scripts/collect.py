@@ -5,7 +5,7 @@ collect.py - Daily collector for AWS security release tracking.
 INTERPRETER: pinned to /usr/bin/python3 (macOS system Python) on purpose.
 The python.org 3.8 framework build on this machine has no CA roots installed and
 fails every fetch with CERTIFICATE_VERIFY_FAILED. The system interpreter uses the
-macOS trust store, so it keeps working across Homebrew upgrades and launchd runs.
+macOS trust store, so it keeps working across Homebrew upgrades.
 Code stays 3.8-compatible so any interpreter with working TLS will do.
 
 WHY THIS EXISTS
@@ -179,26 +179,162 @@ def compile_matchers(sources):
     return core, adjacent, net
 
 
-def classify(item, core, adjacent, net):
-    """
-    Tag an item with matching in-scope services.
+def _hits(pats, text):
+    return any(p.search(text) for p in pats)
 
-    Returns (core_hits, adjacent_hits, net_hit). An item is retained if it hits
-    anything at all; the 'net' bucket is what prevents silent misses for
-    renamed features or services we did not anticipate.
-    """
-    haystack = " ".join([
-        item.get("title", ""),
-        item.get("summary", ""),
-        " ".join(item.get("categories", [])),
-    ])
 
-    core_hits = [svc["name"] for svc, pats in core
-                 if any(p.search(haystack) for p in pats)]
-    adj_hits = [svc["name"] for svc, pats in adjacent
-                if any(p.search(haystack) for p in pats)]
-    net_hit = any(p.search(haystack) for p in net)
-    return core_hits, adj_hits, net_hit
+# Verbs that separate the SUBJECT of an AWS announcement title from its predicate.
+# "Amazon SageMaker Unified Studio | now supports ... IAM authentication ..."
+_SUBJECT_SPLIT = re.compile(
+    r"\s(?:now\s|is\snow\b|are\snow\b|announces\b|introduces\b|launches\b|adds\b|"
+    r"supports\b|expands\b|extends\b|enables\b|achieves\b|available\b)|:",
+    re.IGNORECASE)
+
+
+def title_subject(title, cap=120):
+    """
+    Extract the SUBJECT of an announcement title - the service the release is about.
+
+    AWS titles are overwhelmingly '<Service> now <does something>', so the text
+    before the verb identifies the owning service. Without this, a title like
+    'Amazon SageMaker Unified Studio now supports ... IAM authentication for
+    Amazon DocumentDB' gets filed as an IAM release, which is wrong: it is a
+    SageMaker release that happens to use IAM.
+
+    The heuristic only fires when that canonical shape is actually present. Some
+    announcements are prose ('Improve your secrets security posture ... in the
+    AWS Secrets Manager console'), and blindly truncating those would cut off the
+    very service name that classifies them.
+    """
+    if not title:
+        return ""
+    if not _SUBJECT_SPLIT.search(title):
+        return title
+    return _SUBJECT_SPLIT.split(title, maxsplit=1)[0][:cap]
+
+
+def classify(item, core, adjacent, net, use_subject=True):
+    """
+    Two-tier classification.
+
+    TITLE match  -> the release is FOR that service (goes in its digest section).
+    BODY match   -> the release merely REFERENCES it (recorded as a 'mention').
+
+    This distinction is what keeps the digest readable. A single-tier match on
+    r'\\bIAM\\b' tags every Redshift, ElastiCache and SageMaker announcement that
+    happens to mention an IAM policy, which buries the handful of actual IAM
+    releases. AWS announcement titles reliably name the owning service, so the
+    title is the right discriminator.
+
+    Returns (title_hits, mention_hits, adj_title, adj_mention, net_title, net_body).
+    """
+    title = item.get("title", "")
+    # Subject extraction only applies to announcement titles, which follow the
+    # '<Service> now <verb>' shape. Blog posts and CVE bulletins are prose
+    # ("Improve your secrets security posture ... in the AWS Secrets Manager
+    # console", "CVE-2026-13762 ... in AWS WAF") and name the service late, so
+    # truncating them to a subject loses the real classification.
+    subject = title_subject(title) if use_subject else title
+    body = " ".join([item.get("summary", ""), " ".join(item.get("categories", []))])
+    rest = title[len(subject):] + " " + body
+
+    title_hits, mention_hits = [], []
+    for svc, pats in core:
+        if _hits(pats, subject):
+            title_hits.append(svc["name"])
+        elif _hits(pats, rest):
+            mention_hits.append(svc["name"])
+
+    # demote_if: drop a generic service when a more specific sibling also matched
+    # the title. 'IAM Identity Center extends multi-Region support' is an Identity
+    # Center release, not an IAM release.
+    by_name = {svc["name"]: svc for svc, _ in core}
+    demoted = set()
+    for name in title_hits:
+        for specific in by_name.get(name, {}).get("demote_if", []):
+            if specific in title_hits:
+                demoted.add(name)
+    title_hits = [n for n in title_hits if n not in demoted]
+
+    adj_title, adj_mention = [], []
+    for svc, pats in adjacent:
+        if _hits(pats, title):
+            adj_title.append(svc["name"])
+        elif _hits(pats, body):
+            adj_mention.append(svc["name"])
+
+    # Split the catch-all net by position too. A security term in the TITLE means
+    # the announcement is probably about security and deserves human review - this
+    # is how a brand-new service we never mapped still reaches the digest. The same
+    # term buried in the body is usually incidental ("...encrypted with KMS..."),
+    # so it is archived but parked as low signal.
+    net_title = _hits(net, title)
+    net_body = _hits(net, body)
+    return title_hits, mention_hits, adj_title, adj_mention, net_title, net_body
+
+
+def build_record(feed, item, key, sources, core, adjacent, net, first_seen):
+    """
+    Produce an archive record, or None if the item is out of scope entirely.
+
+    Scope test is deliberately wide at the edges: security bulletins and
+    per-service doc feeds are forced in by feed authority, and anything hitting
+    the security net is kept in a review queue. Nothing security-shaped is
+    dropped silently.
+    """
+    use_subject = feed.get("authority") == "official-announcement"
+    title_hits, mention_hits, adj_title, adj_mention, net_title, net_body = classify(
+        item, core, adjacent, net, use_subject=use_subject)
+
+    forced = feed.get("authority") in ("official-advisory", "official-docs")
+    if not (title_hits or mention_hits or adj_title or adj_mention
+            or net_title or net_body or forced):
+        return None
+
+    if forced and not title_hits and feed.get("service_hint"):
+        title_hits = [feed["service_hint"]]
+
+    if title_hits:
+        bucket = "core"
+    elif adj_title:
+        bucket = "adjacent"
+    elif feed.get("authority") == "official-advisory":
+        bucket = "advisory"
+    elif feed.get("authority") == "official-docs":
+        bucket = "docs"
+    elif net_title:
+        # Security-shaped title, no service mapped. Could be a brand-new service.
+        bucket = "review-queue"
+    else:
+        bucket = "low-signal"
+
+    # Doc-history feeds point every <link> at the same page; the guid holds the
+    # anchor. Prefer the anchored guid so a citation lands on the actual entry.
+    citation = item["link"]
+    if feed.get("authority") == "official-docs" and item.get("guid", "").startswith("http"):
+        citation = item["guid"]
+
+    return {
+        "key": key,
+        "source": feed["id"],
+        "source_name": feed["name"],
+        "authority": feed.get("authority"),
+        "title": item["title"],
+        "link": citation,
+        "page_link": item["link"],
+        "published": parse_date(item["published_raw"]),
+        "published_raw": item["published_raw"],
+        "summary": item["summary"][:1200],
+        "categories": item["categories"],
+        "services": title_hits,
+        "mentions": mention_hits,
+        "adjacent": adj_title,
+        "adjacent_mentions": adj_mention,
+        "exam_domains": exam_domains(title_hits, sources),
+        "bucket": bucket,
+        "subject": title_subject(item.get("title", "")) if use_subject else item.get("title", ""),
+        "first_seen": first_seen,
+    }
 
 
 def exam_domains(core_hits, sources):
@@ -230,6 +366,81 @@ def load_archive_keys():
     return keys
 
 
+def reclassify(sources, core, adjacent, net, dry_run=False):
+    """
+    Re-apply classification to every archived item in place.
+
+    Needed whenever sources.json changes - new service, tightened regex, new
+    demote_if rule. Only DERIVED fields are recomputed (services, mentions,
+    adjacent, exam_domains, bucket). The collected facts (key, title, link,
+    published, first_seen) are preserved untouched, so the archive stays an
+    honest record of what was seen and when.
+    """
+    if not os.path.exists(ARCHIVE):
+        log("RECLASSIFY skipped - no archive yet")
+        return 0
+
+    feeds = {f["id"]: f for f in sources["feeds"]}
+    out, changed, dropped = [], 0, 0
+
+    with open(ARCHIVE, "r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                old = json.loads(line)
+            except ValueError:
+                continue
+
+            feed = feeds.get(old["source"], {
+                "id": old["source"],
+                "name": old.get("source_name", old["source"]),
+                "authority": old.get("authority"),
+            })
+            item = {
+                "title": old.get("title", ""),
+                "summary": old.get("summary", ""),
+                "categories": old.get("categories", []),
+                "link": old.get("page_link") or old.get("link", ""),
+                "guid": old.get("link", ""),
+                "published_raw": old.get("published_raw", ""),
+            }
+
+            new = build_record(feed, item, old["key"], sources,
+                               core, adjacent, net, old.get("first_seen"))
+            if new is None:
+                # No longer in scope under the new rules. Keep the record but park
+                # it, so the archive never silently loses an item we once saw.
+                old["bucket"] = "out-of-scope"
+                old["services"], old["mentions"] = [], []
+                out.append(old)
+                dropped += 1
+                continue
+
+            # Preserve collection facts over anything recomputed.
+            new["published"] = old.get("published")
+            new["link"] = old.get("link")
+            new["page_link"] = old.get("page_link")
+            new["first_seen"] = old.get("first_seen")
+
+            if (new.get("services") != old.get("services")
+                    or new.get("bucket") != old.get("bucket")):
+                changed += 1
+            out.append(new)
+
+    if not dry_run:
+        tmp = ARCHIVE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            for rec in out:
+                fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        os.replace(tmp, ARCHIVE)
+
+    log("RECLASSIFY {} items | {} reclassified | {} now out-of-scope{}".format(
+        len(out), changed, dropped, " (dry run)" if dry_run else ""))
+    return 0
+
+
 def load_state():
     if os.path.exists(STATE):
         try:
@@ -248,6 +459,8 @@ def main():
     ap = argparse.ArgumentParser(description="Collect AWS security releases into a local archive.")
     ap.add_argument("--verbose", action="store_true", help="print every new item")
     ap.add_argument("--dry-run", action="store_true", help="do not write the archive")
+    ap.add_argument("--reclassify", action="store_true",
+                    help="re-apply sources.json rules to the existing archive and exit")
     args = ap.parse_args()
 
     os.makedirs(RAW_DIR, exist_ok=True)
@@ -256,6 +469,10 @@ def main():
         sources = json.load(fh)
 
     core, adjacent, net = compile_matchers(sources)
+
+    if args.reclassify:
+        return reclassify(sources, core, adjacent, net, dry_run=args.dry_run)
+
     seen_keys = load_archive_keys()
     state = load_state()
 
@@ -298,54 +515,17 @@ def main():
             if not key or key in seen_keys:
                 continue
 
-            core_hits, adj_hits, net_hit = classify(item, core, adjacent, net)
-
-            # Bulletins and per-service doc feeds are in-scope wholesale.
-            forced = feed.get("authority") in ("official-advisory", "official-docs")
-            if not (core_hits or adj_hits or net_hit or forced):
+            record = build_record(feed, item, key, sources,
+                                  core, adjacent, net, run_started)
+            if record is None:
                 continue
 
-            if forced and not core_hits and feed.get("service_hint"):
-                core_hits = [feed["service_hint"]]
-
-            # Doc-history feeds point every <link> at the same page; the guid holds
-            # the anchor. Prefer the anchored guid so citations land on the entry.
-            citation = item["link"]
-            if feed.get("authority") == "official-docs" and item["guid"].startswith("http"):
-                citation = item["guid"]
-
-            if core_hits:
-                bucket = "core"
-            elif adj_hits:
-                bucket = "adjacent"
-            elif forced:
-                bucket = "advisory" if feed["authority"] == "official-advisory" else "docs"
-            else:
-                bucket = "review-queue"
-
-            record = {
-                "key": key,
-                "source": fid,
-                "source_name": feed["name"],
-                "authority": feed.get("authority"),
-                "title": item["title"],
-                "link": citation,
-                "page_link": item["link"],
-                "published": parse_date(item["published_raw"]),
-                "published_raw": item["published_raw"],
-                "summary": item["summary"][:1200],
-                "categories": item["categories"],
-                "services": core_hits,
-                "adjacent": adj_hits,
-                "exam_domains": exam_domains(core_hits, sources),
-                "bucket": bucket,
-                "first_seen": run_started,
-            }
             new_records.append(record)
             seen_keys.add(key)
             kept += 1
             if args.verbose:
-                print("  + [{}] {} :: {}".format(bucket, record["published"] or "?", record["title"]))
+                print("  + [{}] {} :: {}".format(
+                    record["bucket"], record["published"] or "?", record["title"]))
 
         feed_report[fid] = {"status": "ok", "items_in_feed": len(items), "new": kept}
         log("OK    {} - {} items in feed, {} new".format(fid, len(items), kept))
@@ -380,7 +560,7 @@ def main():
         len(seen_keys)))
 
     failed = [f for f in feed_report.values() if f["status"] != "ok"]
-    # Non-zero exit tells launchd (and the session hook) that coverage is incomplete.
+    # Non-zero exit signals that coverage is incomplete, so a caller can react.
     return 1 if failed else 0
 
 

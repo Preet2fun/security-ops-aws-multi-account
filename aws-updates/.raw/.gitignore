@@ -1,0 +1,10 @@
+# Keep the archive: items.jsonl IS the no-miss guarantee. Once an announcement
+# ages out of the AWS feed (~10 days) this file is the only copy, so it must be
+# committed and must survive a clone.
+!items.jsonl
+!state.json
+
+# Regenerable or machine-local noise.
+brief-*.md
+*.log
+*.tmp

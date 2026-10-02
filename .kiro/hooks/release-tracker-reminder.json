@@ -2,12 +2,12 @@
   "version": "v1",
   "hooks": [
     {
-      "name": "Weekly Release Tracker Reminder",
+      "name": "AWS Security Tracker Health Check",
       "trigger": "SessionStart",
-      "description": "Checks if the current week's AWS security digest exists. If missing, reminds to run @release-tracker.",
+      "description": "Reports collector freshness and whether this ISO week's digest exists. Warns loudly when a collection gap exceeds the ~10-day What's New feed retention, because those announcements cannot be recovered. Prints nothing when everything is current.",
       "action": {
         "type": "command",
-        "command": "YEAR=$(date +%Y) && WEEK=$(date +%V) && FILE=\"aws-updates/${YEAR}-week-${WEEK}.md\" && if [ ! -f \"$FILE\" ]; then echo \"No AWS security digest for week ${WEEK} yet. Run @release-tracker to generate this week's digest and check for stale content.\"; else echo \"\"; fi"
+        "command": "bash aws-updates/scripts/health-check.sh"
       }
     }
   ]
