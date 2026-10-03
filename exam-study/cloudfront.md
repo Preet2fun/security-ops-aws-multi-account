@@ -1,4 +1,5 @@
 # Amazon CloudFront — Deep Dive for Security Specialty Exam
+<!-- STALE: CVE-2026-13762 / CVE-2026-13763 — AWS WAF HTTP/2 multi-frame request body inspection on CloudFront and ALB (2026-09-22) — run @content-updater cloudfront to refresh -->
 
 ## 1. Service Introduction & Significance
 

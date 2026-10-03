@@ -1,4 +1,5 @@
 # AWS Organizations Setup - Manual Configuration Guide
+<!-- STALE: Amazon GuardDuty now supports centralized management using AWS Organizations declarative policies (2026-10-01) — run @content-updater organizations to refresh -->
 
 ## Overview
 This guide provides step-by-step instructions for setting up AWS Organizations in the management account, enabling all features, creating organizational units, and configuring consolidated billing. This implementation satisfies Requirements 1.1, 1.2, 1.3, 1.4, and 1.5 from the multi-account foundation specification.

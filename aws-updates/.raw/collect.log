@@ -37,3 +37,14 @@
 [2026-10-02T03:24:32Z] OK    security-bulletins - 92 items in feed, 0 new
 [2026-10-02T03:24:32Z] OK    guardduty-doc-history - 230 items in feed, 0 new
 [2026-10-02T03:24:32Z] DONE  1 new items {"low-signal": 1} | archive total 396
+[2026-10-02T03:37:46Z] OK    whats-new - 100 items in feed, 0 new
+[2026-10-02T03:37:47Z] OK    security-blog - 20 items in feed, 0 new
+[2026-10-02T03:37:48Z] OK    security-bulletins - 92 items in feed, 0 new
+[2026-10-02T03:37:49Z] OK    guardduty-doc-history - 230 items in feed, 0 new
+[2026-10-02T03:37:49Z] DONE  0 new items {} | archive total 396
+[2026-10-02T03:50:12Z] RECLASSIFY 396 items | 1 reclassified | 1 now out-of-scope
+[2026-10-03T17:58:24Z] OK    whats-new - 100 items in feed, 6 new
+[2026-10-03T17:58:27Z] OK    security-blog - 20 items in feed, 0 new
+[2026-10-03T17:58:28Z] OK    security-bulletins - 95 items in feed, 3 new
+[2026-10-03T17:58:29Z] OK    guardduty-doc-history - 230 items in feed, 0 new
+[2026-10-03T17:58:29Z] DONE  9 new items {"low-signal": 4, "review-queue": 1, "core": 1, "advisory": 3} | archive total 405

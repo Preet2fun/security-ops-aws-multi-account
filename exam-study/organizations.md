@@ -1,4 +1,5 @@
 # AWS Organizations - Deep Dive for Security Specialty Exam
+<!-- STALE: Amazon GuardDuty now supports centralized management using AWS Organizations declarative policies (2026-10-01) — run @content-updater organizations to refresh -->
 
 ## Service Overview
 

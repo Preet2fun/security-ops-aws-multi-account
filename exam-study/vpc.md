@@ -1,4 +1,5 @@
 # Amazon VPC Security — Deep Dive for Security Specialty Exam
+<!-- STALE: AWS IAM outbound identity federation now supports interface VPC endpoints for OIDC discovery (2026-09-25) — run @content-updater vpc to refresh -->
 
 ## 1. Service Introduction & Significance
 
